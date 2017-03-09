@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<products>
+	<product name="lhc-commons-spring-wonderland" version="1.0.0" directory="lhc/commons/lhc-commons-spring-wonderland">
+		<dependencies>
+			<dep product="spring-core" version="PRO" />
+			<dep product="spring-context" version="PRO" />
+			<dep product="guava" version="21.0" />
+			<dep product="slf4j-api" version="PRO" />
+		</dependencies>
+	</product>
+</products>
