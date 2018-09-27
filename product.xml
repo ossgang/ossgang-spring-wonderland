@@ -6,6 +6,8 @@
 			<dep product="spring-context" version="PRO" />
 			<dep product="guava" version="21.0" />
 			<dep product="slf4j-api" version="PRO" />
+
+			<dep product="junit" version="PRO" local="true" />
 		</dependencies>
 	</product>
 </products>
