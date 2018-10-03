@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <products>
-	<product name="lhc-commons-spring-wonderland" version="2.1.0" directory="lhc/commons/lhc-commons-spring-wonderland">
+	<product name="lhc-commons-spring-wonderland" version="2.0.0" directory="lhc/commons/lhc-commons-spring-wonderland">
 		<dependencies>
 			<dep product="spring-core" version="PRO" />
 			<dep product="spring-context" version="PRO" />
