@@ -4,17 +4,19 @@
 
 package cern.lhc.spring.wonderland;
 
-import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import com.google.common.collect.ImmutableSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import java.awt.BorderLayout;
-import java.awt.Container;
 import java.awt.Dialog.ModalityType;
-import java.awt.JobAttributes.DefaultSelectionType;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,19 +30,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableSet;
-import com.sun.javafx.runtime.SystemProperties;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 public class WonderlandContextSelector {
 
@@ -158,29 +150,26 @@ public class WonderlandContextSelector {
             LOGGER.info("property '" + SPRING_PROFILES_ACTIVE + "' is already set. No selection dialog will be shown.");
         } else {
             LOGGER.info("Showing user input dialog for spring profile selection.");
-            String selectedProfiles = showProfileSelectionDialog();
-            LOGGER.info("Setting the following spring profiles as active: " + selectedProfiles);
-            System.setProperty(SPRING_PROFILES_ACTIVE, selectedProfiles);
+            List<String> selectedProfiles = showProfileSelectionDialog();
+            setActiveProfiles(selectedProfiles);
         }
         logActiveProfiles();
     }
 
-    private String showProfileSelectionDialog() {
-        Collection<String> profiles = new HashSet<>();
-        profiles.addAll(new AnnotationProfileFinder().discoverSpringProfilesInDefaultPackages());
-        profiles.addAll(new XmlProfileFinder().discoverSpringProfilesInDefaultSelector());
+    private void setActiveProfiles(List<String> selectedProfiles) {
+        LOGGER.info("Setting the following spring profiles as active: " + selectedProfiles);
+        System.setProperty(SPRING_PROFILES_ACTIVE, String.join(",", selectedProfiles));
+    }
 
-        Set<String> filtered = profiles.stream().map(String::trim).map(s -> {
-            if (s.startsWith("!")) {
-                if (s.length() > 1) {
-                    return Optional.<String> of(s.substring(1));
-                } else {
-                    return Optional.<String> empty();
-                }
-            } else {
-                return Optional.<String> of(s);
-            }
-        }).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
+    public void selectProProfiles() {
+        List<String> proProfiles = collectProfiles().stream()
+                .filter(p -> p.endsWith(".pro"))
+                .collect(toList());
+        setActiveProfiles(proProfiles);
+    }
+
+    private List<String> showProfileSelectionDialog() {
+        Set<String> filtered = collectProfiles();
 
         List<String> uncategorizedProfiles = new ArrayList<>();
         Map<String, List<String>> profilesByCategory = new HashMap<>();
@@ -239,9 +228,26 @@ public class WonderlandContextSelector {
             System.exit(0);
         }
 
-        String selectedProfiles = categorySelectors.stream().map(s -> s.getSelectedProfile())
-                .filter(Optional::isPresent).map(Optional::get).collect(joining(","));
-        return selectedProfiles;
+        return categorySelectors.stream().map(s -> s.getSelectedProfile())
+                .filter(Optional::isPresent).map(Optional::get).collect(toList());
+    }
+
+    private Set<String> collectProfiles() {
+        Collection<String> profiles = new HashSet<>();
+        profiles.addAll(new AnnotationProfileFinder().discoverSpringProfilesInDefaultPackages());
+        profiles.addAll(new XmlProfileFinder().discoverSpringProfilesInDefaultSelector());
+
+        return profiles.stream().map(String::trim).map(s -> {
+            if (s.startsWith("!")) {
+                if (s.length() > 1) {
+                    return Optional.<String> of(s.substring(1));
+                } else {
+                    return Optional.<String> empty();
+                }
+            } else {
+                return Optional.<String> of(s);
+            }
+        }).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
     }
 
     private void logActiveProfiles() {
