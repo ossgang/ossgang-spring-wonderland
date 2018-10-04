@@ -8,7 +8,13 @@ import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Dialog.ModalityType;
 import java.awt.GridLayout;
@@ -156,7 +162,9 @@ public class WonderlandContextSelector {
     }
 
     public void selectProProfiles() {
-        List<String> proProfiles = collectProfiles().stream().filter(p -> p.endsWith(".pro")).collect(toList());
+        List<String> proProfiles = collectProfiles().stream()
+                .filter(p -> p.endsWith(".pro"))
+                .collect(toList());
         setActiveProfiles(proProfiles);
     }
 
@@ -220,13 +228,13 @@ public class WonderlandContextSelector {
             System.exit(0);
         }
 
-        return categorySelectors.stream().map(s -> s.getSelectedProfile()).filter(Optional::isPresent)
-                .map(Optional::get).collect(toList());
+        return categorySelectors.stream().map(s -> s.getSelectedProfile())
+                .filter(Optional::isPresent).map(Optional::get).collect(toList());
     }
 
     private Set<String> collectProfiles() {
         Collection<String> profiles = new HashSet<>();
-        profiles.addAll(new AnnotationProfileFinder().discoverSpringProfilesIn(packagesToScan));
+        profiles.addAll(new AnnotationProfileFinder().discoverSpringProfilesInDefaultPackages());
         profiles.addAll(new XmlProfileFinder().discoverSpringProfilesInDefaultSelector());
 
         return profiles.stream().map(String::trim).map(s -> {
