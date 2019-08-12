@@ -7,7 +7,7 @@
 			<dep product="guava" version="21.0" />
 			<dep product="slf4j-api" version="PRO" />
 
-			<dep product="junit" version="PRO" local="true" />
+			<dep product="junit" version="PRO" scope="test" />
 		</dependencies>
 	</product>
 </products>
