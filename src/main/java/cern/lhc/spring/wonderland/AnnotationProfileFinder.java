@@ -28,12 +28,6 @@ import com.google.common.reflect.ClassPath.ClassInfo;
 
 public class AnnotationProfileFinder {
 
-    private static final List<String> DEFAULT_CONFIGURATION_CLASS_PACKAGES_TO_SCAN = Arrays.asList("mpe", "cern");
-
-    public Collection<String> discoverSpringProfilesInDefaultPackages() {
-        return discoverSpringProfilesIn(DEFAULT_CONFIGURATION_CLASS_PACKAGES_TO_SCAN);
-    }
-
     public Collection<String> discoverSpringProfilesIn(Collection<String> packages) {
         List<String> profiles = new ArrayList<>();
         profiles.addAll(getConfigurationClassAnnotations(packages));
