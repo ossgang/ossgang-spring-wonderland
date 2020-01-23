@@ -8,16 +8,10 @@ import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import java.awt.BorderLayout;
+import javax.swing.*;
 import java.awt.Dialog.ModalityType;
-import java.awt.GridLayout;
+import java.awt.*;
+import java.util.List;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -34,28 +28,23 @@ public class WonderlandContextSelector {
 
     private static final String DEFAULT_SPLIT_REGEX = "\\.";
     private final String splitRegex;
+    private final Set<String> collectedProfiles;
     private final Set<String> defaultProfiles;
     private final Set<String> packagesToScan;
 
-    private WonderlandContextSelector(String splitRegex, Set<String> defaultProfiles, Set<String> packagesToScan) {
+    private WonderlandContextSelector(String splitRegex, Set<String> defaultProfiles, Set<String> collectedProfiles) {
         this.splitRegex = Objects.requireNonNull(splitRegex, "regex for splitting must not be null");
         requireNonNull(defaultProfiles, "defaultProfiles must not be null");
         this.defaultProfiles = defaultProfiles.stream().map(String::trim).collect(toSet());
-        this.packagesToScan = requireNonNull(packagesToScan, "packags to scan must not be null");
+        this.collectedProfiles = collectedProfiles;
     }
 
-    public static final WonderlandContextSelector create(String firstPackage, String... morePackages) {
-        requireNonNull("first package to scan must not be null! We require at least one package to scan.");
-        Set<String> packages = ImmutableSet.<String> builder().add(firstPackage)
-                .addAll(ImmutableSet.copyOf(morePackages)).build();
-        if (packages.isEmpty()) {
-            throw new IllegalArgumentException("packages to scan must not be null!");
-        }
-        return new WonderlandContextSelector(DEFAULT_SPLIT_REGEX, ImmutableSet.of(), packages);
+    public static WonderlandContextSelector create() {
+        return new WonderlandContextSelector(DEFAULT_SPLIT_REGEX, ImmutableSet.of(), collectProfiles());
     }
 
     public WonderlandContextSelector separatorRegex(String newSplitRegex) {
-        return new WonderlandContextSelector(newSplitRegex, defaultProfiles, packagesToScan);
+        return new WonderlandContextSelector(newSplitRegex, defaultProfiles, collectedProfiles);
     }
 
     public WonderlandContextSelector defaultProfiles(String... newDefaultProfiles) {
@@ -63,85 +52,14 @@ public class WonderlandContextSelector {
     }
 
     public WonderlandContextSelector defaultProfiles(Set<String> newDefaultProfiles) {
-        return new WonderlandContextSelector(splitRegex, newDefaultProfiles, packagesToScan);
+        return new WonderlandContextSelector(splitRegex, newDefaultProfiles, collectedProfiles);
     }
 
-    private abstract static class ProfileSelector extends JPanel {
-        private static final long serialVersionUID = 1L;
-
-        public abstract Optional<String> getSelectedProfile();
-    }
-
-    private static class ProfileChooserSelectionPanel extends ProfileSelector {
-        private static final long serialVersionUID = 1L;
-
-        private final String category;
-        private final JComboBox<String> profileSelector;
-        private final JCheckBox active;
-
-        ProfileChooserSelectionPanel(String category, Collection<String> choices, String defaulSelection) {
-            this.category = category;
-            boolean isActive = defaulSelection != null;
-
-            setLayout(new BorderLayout());
-
-            JPanel selectionPanel = new JPanel(new BorderLayout());
-            selectionPanel.setBorder(BorderFactory.createTitledBorder(category));
-
-            List<String> choiceList = new ArrayList<>(choices);
-            choiceList.sort(String::compareTo);
-            profileSelector = new JComboBox<>(choiceList.toArray(new String[0]));
-            if (isActive) {
-                profileSelector.setSelectedItem(defaulSelection);
-            }
-            profileSelector.setEnabled(isActive);
-            selectionPanel.add(profileSelector, BorderLayout.CENTER);
-
-            add(selectionPanel, BorderLayout.CENTER);
-
-            active = new JCheckBox();
-            active.addActionListener(evt -> profileSelector.setEnabled(active.isSelected()));
-            active.setSelected(isActive);
-            add(active, BorderLayout.WEST);
-        }
-
-        @Override
-        public Optional<String> getSelectedProfile() {
-            if (active.isSelected()) {
-                return Optional.of(category + '.' + profileSelector.getSelectedItem());
-            }
-            return Optional.empty();
-        }
-    }
-
-    private static class ProfileEnableDisableSelectionPanel extends ProfileSelector {
-        private static final long serialVersionUID = 1L;
-
-        private final String profileName;
-        private final JCheckBox active;
-
-        ProfileEnableDisableSelectionPanel(String profile, boolean enabled) {
-            profileName = profile;
-            setLayout(new BorderLayout());
-
-            JLabel profileNameLabel = new JLabel(profile);
-            profileNameLabel.setEnabled(enabled);
-
-            add(profileNameLabel, BorderLayout.CENTER);
-
-            active = new JCheckBox();
-            active.setSelected(enabled);
-            active.addActionListener(evt -> profileNameLabel.setEnabled(active.isSelected()));
-            add(active, BorderLayout.WEST);
-        }
-
-        @Override
-        public Optional<String> getSelectedProfile() {
-            if (active.isSelected()) {
-                return Optional.of(profileName);
-            }
-            return Optional.empty();
-        }
+    public WonderlandContextSelector defaultDemoProfiles() {
+        Set<String> demoProfiles = collectedProfiles.stream()
+                .filter(p -> p.endsWith(".demo"))
+                .collect(toSet());
+        return new WonderlandContextSelector(splitRegex, demoProfiles, collectedProfiles);
     }
 
     public void showSelectionIfUnconfigured() {
@@ -162,14 +80,21 @@ public class WonderlandContextSelector {
     }
 
     public void selectProProfiles() {
-        List<String> proProfiles = collectProfiles().stream()
+        List<String> proProfiles = collectedProfiles.stream()
                 .filter(p -> p.endsWith(".pro"))
                 .collect(toList());
         setActiveProfiles(proProfiles);
     }
 
+    public void selectDemoProfiles() {
+        List<String> demoProfiles = collectedProfiles.stream()
+                .filter(p -> p.endsWith(".demo"))
+                .collect(toList());
+        setActiveProfiles(demoProfiles);
+    }
+
     private List<String> showProfileSelectionDialog() {
-        Set<String> filtered = collectProfiles();
+        Set<String> filtered = collectedProfiles;
 
         List<String> uncategorizedProfiles = new ArrayList<>();
         Map<String, List<String>> profilesByCategory = new HashMap<>();
@@ -209,7 +134,7 @@ public class WonderlandContextSelector {
         JDialog frame = new JDialog();
         frame.setModalityType(ModalityType.APPLICATION_MODAL);
         frame.setTitle("Welcome to the Wonderland!");
-        frame.setLayout(new GridLayout(0, 1));
+        frame.setLayout(new GridLayout(0, 1, 5, 5));
         categorySelectors.forEach(frame::add);
         uncategorizedSelectors.forEach(frame::add);
         JButton closeButton = new JButton("Make it so!");
@@ -219,7 +144,7 @@ public class WonderlandContextSelector {
             frame.setVisible(false);
         });
         frame.add(closeButton);
-        frame.setSize(100, 100);
+        frame.setMinimumSize(new Dimension(400, 300));
         frame.pack();
         frame.setVisible(true);
 
@@ -228,11 +153,15 @@ public class WonderlandContextSelector {
             System.exit(0);
         }
 
-        return categorySelectors.stream().map(s -> s.getSelectedProfile())
-                .filter(Optional::isPresent).map(Optional::get).collect(toList());
+        return categorySelectors.stream()
+                .map(ProfileChooserSelectionPanel::getSelectedProfile)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(toList());
     }
 
-    private Set<String> collectProfiles() {
+    private static Set<String> collectProfiles() {
+        LOGGER.info("Collecting all Spring profiles");
         Collection<String> profiles = new HashSet<>();
         profiles.addAll(new AnnotationProfileFinder().discoverSpringProfilesInDefaultPackages());
         profiles.addAll(new XmlProfileFinder().discoverSpringProfilesInDefaultSelector());
@@ -240,12 +169,12 @@ public class WonderlandContextSelector {
         return profiles.stream().map(String::trim).map(s -> {
             if (s.startsWith("!")) {
                 if (s.length() > 1) {
-                    return Optional.<String> of(s.substring(1));
+                    return Optional.<String>of(s.substring(1));
                 } else {
-                    return Optional.<String> empty();
+                    return Optional.<String>empty();
                 }
             } else {
-                return Optional.<String> of(s);
+                return Optional.<String>of(s);
             }
         }).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
     }

@@ -4,27 +4,19 @@
 
 package cern.lhc.spring.wonderland;
 
-import static com.google.common.base.Predicates.isNull;
-import static com.google.common.base.Predicates.not;
+import com.google.common.reflect.ClassPath;
+import com.google.common.reflect.ClassPath.ClassInfo;
+import org.springframework.context.annotation.Profile;
 
 import java.io.IOException;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.springframework.context.annotation.Profile;
-
-import com.google.common.reflect.ClassPath;
-import com.google.common.reflect.ClassPath.ClassInfo;
+import static com.google.common.base.Predicates.not;
 
 public class AnnotationProfileFinder {
 
@@ -64,8 +56,10 @@ public class AnnotationProfileFinder {
     }
 
     private Set<String> profilesFromAnnotations(Collection<? extends AnnotatedElement> annotations) {
-        return annotations.stream().map(element -> element.getAnnotation(Profile.class)).filter(not(isNull()))
-                .flatMap(annotation -> Stream.of(annotation.value())).collect(Collectors.toSet());
+        return annotations.stream().map(element -> element.getAnnotation(Profile.class))
+                .filter(not(Objects::isNull))
+                .flatMap(annotation -> Stream.of(annotation.value()))
+                .collect(Collectors.toSet());
     }
 
     private static boolean matchesAnyPrefix(String txt, Collection<String> prefixes) {
