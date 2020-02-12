@@ -1,0 +1,13 @@
+language: java
+sudo: false
+jdk:
+- openjdk8
+- openjdk9
+before_install:
+- chmod +x ./gradlew
+script:
+- ./gradlew check -i
+- ./gradlew javadoc
+- ./gradlew jacocoTestReport
+after_success:
+- bash <(curl -s https://codecov.io/bash)
