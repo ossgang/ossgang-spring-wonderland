@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2017 European Organisation for Nuclear Research (CERN), All Rights Reserved.
  */
 
@@ -19,6 +19,12 @@ import java.util.stream.Stream;
 import static com.google.common.base.Predicates.not;
 
 public class AnnotationProfileFinder {
+
+    private static final List<String> DEFAULT_CONFIGURATION_CLASS_PACKAGES_TO_SCAN = Arrays.asList("mpe", "cern");
+
+    public Collection<String> discoverSpringProfilesInDefaultPackages() {
+        return discoverSpringProfilesIn(DEFAULT_CONFIGURATION_CLASS_PACKAGES_TO_SCAN);
+    }
 
     public Collection<String> discoverSpringProfilesIn(Collection<String> packages) {
         List<String> profiles = new ArrayList<>();

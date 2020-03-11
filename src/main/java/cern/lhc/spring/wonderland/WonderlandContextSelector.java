@@ -30,7 +30,6 @@ public class WonderlandContextSelector {
     private final String splitRegex;
     private final Set<String> collectedProfiles;
     private final Set<String> defaultProfiles;
-    private final Set<String> packagesToScan;
 
     private WonderlandContextSelector(String splitRegex, Set<String> defaultProfiles, Set<String> collectedProfiles) {
         this.splitRegex = Objects.requireNonNull(splitRegex, "regex for splitting must not be null");
@@ -169,12 +168,12 @@ public class WonderlandContextSelector {
         return profiles.stream().map(String::trim).map(s -> {
             if (s.startsWith("!")) {
                 if (s.length() > 1) {
-                    return Optional.<String>of(s.substring(1));
+                    return Optional.of(s.substring(1));
                 } else {
                     return Optional.<String>empty();
                 }
             } else {
-                return Optional.<String>of(s);
+                return Optional.of(s);
             }
         }).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
     }
