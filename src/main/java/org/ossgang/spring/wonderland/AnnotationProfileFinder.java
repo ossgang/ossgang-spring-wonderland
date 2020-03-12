@@ -16,7 +16,7 @@
  * @formatter:on
  */
 
-package cern.lhc.spring.wonderland;
+package org.ossgang.spring.wonderland;
 
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;

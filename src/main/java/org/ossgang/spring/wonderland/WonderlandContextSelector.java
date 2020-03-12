@@ -16,7 +16,7 @@
  * @formatter:on
  */
 
-package cern.lhc.spring.wonderland;
+package org.ossgang.spring.wonderland;
 
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;

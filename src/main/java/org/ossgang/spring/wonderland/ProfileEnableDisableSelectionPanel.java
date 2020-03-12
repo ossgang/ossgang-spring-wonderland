@@ -16,7 +16,7 @@
  * @formatter:on
  */
 
-package cern.lhc.spring.wonderland;
+package org.ossgang.spring.wonderland;
 
 import javax.swing.*;
 import java.awt.*;
