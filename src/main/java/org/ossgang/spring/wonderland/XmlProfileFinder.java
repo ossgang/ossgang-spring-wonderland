@@ -18,29 +18,30 @@
 
 package org.ossgang.spring.wonderland;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.BeanDefinitionDocumentReader;
 import org.springframework.beans.factory.xml.DefaultBeanDefinitionDocumentReader;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.w3c.dom.Element;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 public class XmlProfileFinder {
-    private static final String DEFAULT_XML_URL_SELECTOR = "classpath*:**/wonderland-*.xml";
-
-    public Set<String> discoverSpringProfilesIn(String selectorUrl) {
-        ProfileListExtractingDocumentReader documentReader = new ProfileListExtractingDocumentReader();
-        CustomXmlBeamDefinitionReader reader = new CustomXmlBeamDefinitionReader(documentReader);
-        reader.loadBeanDefinitions(selectorUrl);
-        return documentReader.getProfiles();
-
-    }
-
-    public Set<String> discoverSpringProfilesInDefaultSelector() {
-        return discoverSpringProfilesIn(DEFAULT_XML_URL_SELECTOR);
+    public Set<String> discoverSpringProfilesIn(Collection<String> scanLocations) {
+        Set<String> discoveredProfiles = new HashSet<>();
+        for (String selectorUrl : scanLocations) {
+            if (!selectorUrl.startsWith("classpath*:")) {
+                continue;
+            }
+            ProfileListExtractingDocumentReader documentReader = new ProfileListExtractingDocumentReader();
+            CustomXmlBeamDefinitionReader reader = new CustomXmlBeamDefinitionReader(documentReader);
+            reader.loadBeanDefinitions(selectorUrl);
+            discoveredProfiles.addAll(documentReader.getProfiles());
+        }
+        return discoveredProfiles;
     }
 
     private static class ProfileListExtractingDocumentReader extends DefaultBeanDefinitionDocumentReader {

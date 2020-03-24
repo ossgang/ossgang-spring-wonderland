@@ -34,20 +34,7 @@ import static com.google.common.base.Predicates.not;
 
 public class AnnotationProfileFinder {
 
-    private static final List<String> DEFAULT_CONFIGURATION_CLASS_PACKAGES_TO_SCAN = Arrays.asList("mpe", "cern");
-
-    public Collection<String> discoverSpringProfilesInDefaultPackages() {
-        return discoverSpringProfilesIn(DEFAULT_CONFIGURATION_CLASS_PACKAGES_TO_SCAN);
-    }
-
-    public Collection<String> discoverSpringProfilesIn(Collection<String> packages) {
-        List<String> profiles = new ArrayList<>();
-        profiles.addAll(getConfigurationClassAnnotations(packages));
-        return profiles;
-    }
-
-    private Collection<String> getConfigurationClassAnnotations(Collection<String> prefixes) {
-
+    public Set<String> discoverSpringProfilesIn(Collection<String> prefixes) {
         try {
             Collection<Class<?>> matchedClasses = ClassPath.from(ClassLoader.getSystemClassLoader()).getAllClasses()
                     .stream().filter(classInfo -> matchesAnyPrefix(classInfo.getPackageName(), prefixes))
@@ -57,14 +44,13 @@ public class AnnotationProfileFinder {
             List<Method> matchedMethods = matchedClasses.stream().flatMap(this::getMethodsFromClass)
                     .collect(Collectors.toList());
 
-            Collection<String> profiles = new HashSet<>();
+            Set<String> profiles = new HashSet<>();
             profiles.addAll(profilesFromAnnotations(matchedClasses));
             profiles.addAll(profilesFromAnnotations(matchedMethods));
             return profiles;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private Stream<? extends Method> getMethodsFromClass(Class<?> clazz) {

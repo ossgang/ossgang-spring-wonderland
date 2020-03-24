@@ -25,11 +25,19 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.awt.Dialog.ModalityType;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -40,24 +48,32 @@ public class WonderlandContextSelector {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WonderlandContextSelector.class);
 
-    private static final String DEFAULT_SPLIT_REGEX = "\\.";
-    private final String splitRegex;
+    private static final List<String> DEFAULT_SCAN_LOCATIONS = asList("mpe", "cern", "classpath*:**/wonderland-*.xml");
+    private static final String CATEGORY_SEPARATOR = ".";
+    private static final String SPLIT_REGEX = "\\.";
+    private static final String DEFAULT_DEMO_PREFIX = "demo";
+    private static final String DEFAULT_PRO_PREFIX = "pro";
     private final Set<String> collectedProfiles;
     private final Set<String> defaultProfiles;
+    private final boolean allowDisablingCategories;
 
-    private WonderlandContextSelector(String splitRegex, Set<String> defaultProfiles, Set<String> collectedProfiles) {
-        this.splitRegex = Objects.requireNonNull(splitRegex, "regex for splitting must not be null");
+    private WonderlandContextSelector(Set<String> defaultProfiles, Set<String> collectedProfiles, boolean allowDisablingCategories) {
         requireNonNull(defaultProfiles, "defaultProfiles must not be null");
         this.defaultProfiles = defaultProfiles.stream().map(String::trim).collect(toSet());
         this.collectedProfiles = collectedProfiles;
+        this.allowDisablingCategories = false;
     }
 
     public static WonderlandContextSelector create() {
-        return new WonderlandContextSelector(DEFAULT_SPLIT_REGEX, ImmutableSet.of(), collectProfiles());
+        return create(DEFAULT_SCAN_LOCATIONS);
     }
 
-    public WonderlandContextSelector separatorRegex(String newSplitRegex) {
-        return new WonderlandContextSelector(newSplitRegex, defaultProfiles, collectedProfiles);
+    public static WonderlandContextSelector create(String... profileScanLocations) {
+        return create(asList(profileScanLocations));
+    }
+
+    public static WonderlandContextSelector create(Collection<String> profileScanLocations) {
+        return new WonderlandContextSelector(ImmutableSet.of(), collectProfiles(profileScanLocations), true);
     }
 
     public WonderlandContextSelector defaultProfiles(String... newDefaultProfiles) {
@@ -65,14 +81,26 @@ public class WonderlandContextSelector {
     }
 
     public WonderlandContextSelector defaultProfiles(Set<String> newDefaultProfiles) {
-        return new WonderlandContextSelector(splitRegex, newDefaultProfiles, collectedProfiles);
+        return new WonderlandContextSelector(newDefaultProfiles, collectedProfiles, allowDisablingCategories);
+    }
+
+    public WonderlandContextSelector defaultProfilesWithPrefix(String prefix) {
+        Set<String> filteredProfiles = collectedProfiles.stream()
+                .filter(p -> p.contains(CATEGORY_SEPARATOR + prefix))
+                .collect(toSet());
+        return new WonderlandContextSelector(filteredProfiles, collectedProfiles, allowDisablingCategories);
     }
 
     public WonderlandContextSelector defaultDemoProfiles() {
-        Set<String> demoProfiles = collectedProfiles.stream()
-                .filter(p -> p.endsWith(".demo"))
-                .collect(toSet());
-        return new WonderlandContextSelector(splitRegex, demoProfiles, collectedProfiles);
+        return defaultProfilesWithPrefix(DEFAULT_DEMO_PREFIX);
+    }
+
+    public WonderlandContextSelector defaultProProfiles() {
+        return defaultProfilesWithPrefix(DEFAULT_PRO_PREFIX);
+    }
+
+    public WonderlandContextSelector withoutDisablingOfCategories() {
+        return new WonderlandContextSelector(defaultProfiles, collectedProfiles, false);
     }
 
     public void showSelectionIfUnconfigured() {
@@ -92,18 +120,19 @@ public class WonderlandContextSelector {
         System.setProperty(SPRING_PROFILES_ACTIVE, String.join(",", selectedProfiles));
     }
 
-    public void selectProProfiles() {
-        List<String> proProfiles = collectedProfiles.stream()
-                .filter(p -> p.endsWith(".pro"))
+    public void selectProfilesWithPrefix(String prefix) {
+        List<String> filteredProfiles = collectedProfiles.stream()
+                .filter(p -> p.contains(CATEGORY_SEPARATOR + prefix))
                 .collect(toList());
-        setActiveProfiles(proProfiles);
+        setActiveProfiles(filteredProfiles);
+    }
+
+    public void selectProProfiles() {
+        selectProfilesWithPrefix(DEFAULT_PRO_PREFIX);
     }
 
     public void selectDemoProfiles() {
-        List<String> demoProfiles = collectedProfiles.stream()
-                .filter(p -> p.endsWith(".demo"))
-                .collect(toList());
-        setActiveProfiles(demoProfiles);
+        selectProfilesWithPrefix(DEFAULT_DEMO_PREFIX);
     }
 
     private List<String> showProfileSelectionDialog() {
@@ -112,7 +141,7 @@ public class WonderlandContextSelector {
         List<String> uncategorizedProfiles = new ArrayList<>();
         Map<String, List<String>> profilesByCategory = new HashMap<>();
         for (String profile : filtered) {
-            String[] split = profile.split(splitRegex, 2);
+            String[] split = profile.split(SPLIT_REGEX, 2);
             if (split.length == 2) {
                 profilesByCategory.computeIfAbsent(split[0], s -> new ArrayList<>()).add(split[1]);
             } else {
@@ -123,7 +152,7 @@ public class WonderlandContextSelector {
         Set<String> defaultUncategorized = new HashSet<>();
         Map<String, String> defaultCategorized = new HashMap<>();
         for (String profile : defaultProfiles) {
-            String[] split = profile.split(splitRegex, 2);
+            String[] split = profile.split(SPLIT_REGEX, 2);
             if (split.length == 2) {
                 String category = split[0];
                 if (defaultCategorized.containsKey(category)) {
@@ -137,12 +166,16 @@ public class WonderlandContextSelector {
         }
 
         List<ProfileChooserSelectionPanel> categorySelectors = profilesByCategory.entrySet().stream().map(
-                e -> new ProfileChooserSelectionPanel(e.getKey(), e.getValue(), defaultCategorized.get(e.getKey())))
+                e -> new ProfileChooserSelectionPanel(e.getKey(), e.getValue(), defaultCategorized.get(e.getKey()),
+                        allowDisablingCategories))
                 .collect(toList());
 
-        List<ProfileEnableDisableSelectionPanel> uncategorizedSelectors = uncategorizedProfiles.stream()
-                .map(p -> new ProfileEnableDisableSelectionPanel(p, defaultUncategorized.contains(p)))
-                .collect(toList());
+        List<ProfileEnableDisableSelectionPanel> uncategorizedSelectors = Collections.emptyList();
+        if (allowDisablingCategories) {
+            uncategorizedSelectors = uncategorizedProfiles.stream()
+                    .map(p -> new ProfileEnableDisableSelectionPanel(p, defaultUncategorized.contains(p)))
+                    .collect(toList());
+        }
 
         JDialog frame = new JDialog();
         frame.setModalityType(ModalityType.APPLICATION_MODAL);
@@ -173,11 +206,11 @@ public class WonderlandContextSelector {
                 .collect(toList());
     }
 
-    private static Set<String> collectProfiles() {
+    private static Set<String> collectProfiles(Collection<String> profileScanLocations) {
         LOGGER.info("Collecting all Spring profiles");
         Collection<String> profiles = new HashSet<>();
-        profiles.addAll(new AnnotationProfileFinder().discoverSpringProfilesInDefaultPackages());
-        profiles.addAll(new XmlProfileFinder().discoverSpringProfilesInDefaultSelector());
+        profiles.addAll(new AnnotationProfileFinder().discoverSpringProfilesIn(profileScanLocations));
+        profiles.addAll(new XmlProfileFinder().discoverSpringProfilesIn(profileScanLocations));
 
         return profiles.stream().map(String::trim).map(s -> {
             if (s.startsWith("!")) {
