@@ -61,7 +61,7 @@ public class WonderlandContextSelector {
         requireNonNull(defaultProfiles, "defaultProfiles must not be null");
         this.defaultProfiles = defaultProfiles.stream().map(String::trim).collect(toSet());
         this.collectedProfiles = collectedProfiles;
-        this.allowDisablingCategories = false;
+        this.allowDisablingCategories = allowDisablingCategories;
     }
 
     public static WonderlandContextSelector create() {
