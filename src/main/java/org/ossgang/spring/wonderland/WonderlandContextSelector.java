@@ -175,20 +175,28 @@ public class WonderlandContextSelector {
                     .collect(toList());
         }
 
+        JPanel selectorsPanel = new JPanel(new GridLayout(0, 1, 5, 5));
+        categorySelectors.forEach(selectorsPanel::add);
+        uncategorizedSelectors.forEach(selectorsPanel::add);
+
+        JScrollPane selectorsScrollPanel = new JScrollPane(selectorsPanel);
+        selectorsScrollPanel.getVerticalScrollBar().setUnitIncrement(10);
+
         JDialog frame = new JDialog();
-        frame.setModalityType(ModalityType.APPLICATION_MODAL);
-        frame.setTitle("Welcome to the Wonderland!");
-        frame.setLayout(new GridLayout(0, 1, 5, 5));
-        categorySelectors.forEach(frame::add);
-        uncategorizedSelectors.forEach(frame::add);
+
         JButton closeButton = new JButton("Make it so!");
         AtomicBoolean confirmed = new AtomicBoolean(false);
         closeButton.addActionListener(e -> {
             confirmed.set(true);
             frame.setVisible(false);
         });
-        frame.add(closeButton);
-        frame.setMinimumSize(new Dimension(400, 300));
+
+        frame.setModalityType(ModalityType.APPLICATION_MODAL);
+        frame.setTitle("Welcome to the Wonderland!");
+        frame.setLayout(new BorderLayout(5, 5));
+        frame.add(selectorsScrollPanel, BorderLayout.CENTER);
+        frame.add(closeButton, BorderLayout.SOUTH);
+        frame.setPreferredSize(new Dimension(350, 500));
         frame.pack();
         frame.setVisible(true);
 
