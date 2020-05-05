@@ -32,8 +32,9 @@ import java.util.stream.Stream;
 
 import static com.google.common.base.Predicates.not;
 
-public class AnnotationProfileFinder {
+public class AnnotationProfileFinder implements WonderlandProfileFinder {
 
+    @Override
     public Set<String> discoverSpringProfilesIn(Collection<String> prefixes) {
         try {
             Collection<Class<?>> matchedClasses = ClassPath.from(ClassLoader.getSystemClassLoader()).getAllClasses()

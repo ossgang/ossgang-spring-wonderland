@@ -25,15 +25,8 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.awt.Dialog.ModalityType;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -73,7 +66,12 @@ public class WonderlandContextSelector {
     }
 
     public static WonderlandContextSelector create(Collection<String> profileScanLocations) {
-        return new WonderlandContextSelector(ImmutableSet.of(), collectProfiles(profileScanLocations), true);
+        List<WonderlandProfileFinder> finders = asList(new AnnotationProfileFinder(), new XmlProfileFinder());
+        return new WonderlandContextSelector(ImmutableSet.of(), collectProfiles(profileScanLocations, finders), true);
+    }
+
+    public static WonderlandContextSelector create(Collection<String> profileScanLocations, Collection<WonderlandProfileFinder> finders) {
+        return new WonderlandContextSelector(ImmutableSet.of(), collectProfiles(profileScanLocations, finders), true);
     }
 
     public WonderlandContextSelector defaultProfiles(String... newDefaultProfiles) {
@@ -206,11 +204,11 @@ public class WonderlandContextSelector {
                 .collect(toList());
     }
 
-    private static Set<String> collectProfiles(Collection<String> profileScanLocations) {
+    private static Set<String> collectProfiles(Collection<String> profileScanLocations, Collection<WonderlandProfileFinder> finders) {
         LOGGER.info("Collecting all Spring profiles");
-        Collection<String> profiles = new HashSet<>();
-        profiles.addAll(new AnnotationProfileFinder().discoverSpringProfilesIn(profileScanLocations));
-        profiles.addAll(new XmlProfileFinder().discoverSpringProfilesIn(profileScanLocations));
+        Collection<String> profiles = finders.stream()
+                .flatMap(f -> f.discoverSpringProfilesIn(profileScanLocations).stream())
+                .collect(Collectors.toSet());
 
         return profiles.stream().map(String::trim).map(s -> {
             if (s.startsWith("!")) {

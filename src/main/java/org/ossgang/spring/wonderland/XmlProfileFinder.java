@@ -29,7 +29,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-public class XmlProfileFinder {
+public class XmlProfileFinder implements WonderlandProfileFinder {
+
+    @Override
     public Set<String> discoverSpringProfilesIn(Collection<String> scanLocations) {
         Set<String> discoveredProfiles = new HashSet<>();
         for (String selectorUrl : scanLocations) {
