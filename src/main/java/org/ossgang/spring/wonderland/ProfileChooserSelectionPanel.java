@@ -32,10 +32,10 @@ class ProfileChooserSelectionPanel extends ProfileSelector {
     private final JComboBox<String> profileSelector;
     private final JCheckBox active;
 
-    ProfileChooserSelectionPanel(String category, Collection<String> choices, String defaulSelection,
+    ProfileChooserSelectionPanel(String category, Collection<String> choices, String defaultSelection,
                                  boolean allowDisabling) {
         this.category = category;
-        boolean isActive = defaulSelection != null;
+        boolean isActive = (defaultSelection != null) || !allowDisabling;
 
         setLayout(new BorderLayout());
 
@@ -46,7 +46,7 @@ class ProfileChooserSelectionPanel extends ProfileSelector {
         choiceList.sort(String::compareTo);
         profileSelector = new JComboBox<>(choiceList.toArray(new String[0]));
         if (isActive) {
-            profileSelector.setSelectedItem(defaulSelection);
+            profileSelector.setSelectedItem(defaultSelection);
         }
         profileSelector.setEnabled(isActive);
         selectionPanel.add(profileSelector, BorderLayout.CENTER);
@@ -54,12 +54,10 @@ class ProfileChooserSelectionPanel extends ProfileSelector {
         add(selectionPanel, BorderLayout.CENTER);
 
         this.active = new JCheckBox();
+        this.active.setSelected(isActive);
         if (allowDisabling) {
             this.active.addActionListener(evt -> profileSelector.setEnabled(active.isSelected()));
-            this.active.setSelected(isActive);
             add(active, BorderLayout.WEST);
-        } else {
-            this.active.setSelected(true);
         }
     }
 
