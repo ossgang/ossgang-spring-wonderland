@@ -45,8 +45,10 @@ class ProfileChooserSelectionPanel extends ProfileSelector {
         List<String> choiceList = new ArrayList<>(choices);
         choiceList.sort(String::compareTo);
         profileSelector = new JComboBox<>(choiceList.toArray(new String[0]));
-        if (isActive) {
+        if (defaultSelection != null) {
             profileSelector.setSelectedItem(defaultSelection);
+        } else {
+            profileSelector.setSelectedIndex(0);
         }
         profileSelector.setEnabled(isActive);
         selectionPanel.add(profileSelector, BorderLayout.CENTER);
