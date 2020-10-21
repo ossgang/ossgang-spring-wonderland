@@ -37,7 +37,8 @@ public class AnnotationProfileFinder implements WonderlandProfileFinder {
     @Override
     public Set<String> discoverSpringProfilesIn(Collection<String> prefixes) {
         try {
-            Collection<Class<?>> matchedClasses = ClassPath.from(ClassLoader.getSystemClassLoader()).getAllClasses()
+            Collection<Class<?>> matchedClasses = ClassPath.from(AnnotationProfileFinder.class.getClassLoader())
+                    .getAllClasses()
                     .stream().filter(classInfo -> matchesAnyPrefix(classInfo.getPackageName(), prefixes))
                     .map(tryOptional(ClassInfo::load)).filter(Optional::isPresent).map(Optional::get)
                     .collect(Collectors.toList());
@@ -62,7 +63,7 @@ public class AnnotationProfileFinder implements WonderlandProfileFinder {
         }
     }
 
-    private Set<String> profilesFromAnnotations(Collection<? extends AnnotatedElement> annotations) {
+    private static Set<String> profilesFromAnnotations(Collection<? extends AnnotatedElement> annotations) {
         return annotations.stream().map(element -> element.getAnnotation(Profile.class))
                 .filter(not(Objects::isNull))
                 .flatMap(annotation -> Stream.of(annotation.value()))
