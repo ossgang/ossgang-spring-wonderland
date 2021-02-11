@@ -197,6 +197,7 @@ public class WonderlandContextSelector {
         closeButton.addActionListener(e -> {
             confirmed.set(true);
             frame.setVisible(false);
+            frame.dispose();
         });
 
         frame.setModalityType(ModalityType.APPLICATION_MODAL);
