@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -213,8 +214,8 @@ public class WonderlandContextSelector {
             System.exit(0);
         }
 
-        return categorySelectors.stream()
-                .map(ProfileChooserSelectionPanel::getSelectedProfile)
+        return Stream.concat(categorySelectors.stream(), uncategorizedSelectors.stream())
+                .map(ProfileSelector::getSelectedProfile)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(toList());
