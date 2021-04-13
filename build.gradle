@@ -15,31 +15,23 @@
  * limitations under the License.
  * @formatter:on
  */
-
 buildscript {
     project.ext['CERN_VM'] = System.getProperty('CERN_TECHNET_VM') ?: System.getenv('CERN_TECHNET_VM') ?: project.hasProperty('CERN_TECHNET_VM') ?: false
-    project.ext['DEPLOYMENT'] = System.getProperty('deployment') ?: false
-    project.ext['VCS_TAG'] = System.getProperty('TRAVIS_TAG') ?: System.getenv('TRAVIS_TAG')
-
-    project.ext['BINTRAY.userName'] = System.getProperty('BINTRAY_USER') ?: System.getenv('BINTRAY_USER')
-    project.ext['BINTRAY.apiToken'] = System.getProperty('BINTRAY_API_TOKEN') ?: System.getenv('BINTRAY_API_TOKEN')
-
-    project.ext['SONATYPE.userName'] = System.getProperty('SONATYPE_USER') ?: System.getenv('SONATYPE_USER')
-    project.ext['SONATYPE.password'] = System.getProperty('SONATYPE_PASSWORD') ?: System.getenv('SONATYPE_PASSWORD')
+    project.ext['DEPLOYMENT'] = System.getProperty('DEPLOYMENT') ?: false
 
     repositories {
         if (project['CERN_VM']) {
             maven { url 'http://artifactory.cern.ch/ds-jcenter' }
             maven { url 'http://artifactory.cern.ch/development' }
+            maven { url 'http://artifactory.cern.ch/gradle-plugins' }
         } else {
-            maven { url 'https://plugins.gradle.org/m2/' }
-            jcenter()
+            gradlePluginPortal()
         }
     }
 
     dependencies {
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
         classpath 'com.github.jk1:gradle-license-report:1.5'
+        classpath 'io.github.gradle-nexus:publish-plugin:1.0.0'
     }
 }
 
@@ -58,25 +50,26 @@ repositories {
         maven { url 'http://artifactory.cern.ch/development' }
     } else {
         mavenCentral()
-        jcenter()
     }
 }
 
 dependencies {
-
     compile group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
         
     compile group: 'org.springframework', name: 'spring-core', version: springVersion
     compile group: 'org.springframework', name: 'spring-context', version: springVersion
     
-    compile group: 'com.google.guava', name: 'guava', version: '28.1-jre'
+    compile group: 'com.google.guava', name: 'guava', version: guavaVersion
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.9.1'
     testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.0'
 }
 
-task wrapper(type: Wrapper) { gradleVersion = '4.10.2' }
+wrapper {
+    gradleVersion = '5.4.1'
+    distributionType = Wrapper.DistributionType.ALL
+}
 
 sourceSets {
     main {
@@ -146,7 +139,5 @@ if (!project['CERN_VM']) {
 
 if (project['DEPLOYMENT']) {
     println 'Applying deployment scripts'
-    apply plugin: 'maven-publish'
-    apply plugin: 'com.jfrog.bintray'
-    apply from: 'https://raw.githubusercontent.com/ossgang/gradle-scripts/master/deployment/bintray-deploy.gradle'
+    apply from: 'https://raw.githubusercontent.com/ossgang/gradle-scripts/master/deployment/deploy-to-maven-central.gradle'
 }
