@@ -21,53 +21,64 @@ buildscript {
 
     repositories {
         if (project['CERN_VM']) {
-            maven { url 'http://artifactory.cern.ch/ds-jcenter' }
-            maven { url 'http://artifactory.cern.ch/development' }
-            maven { url 'http://artifactory.cern.ch/gradle-plugins' }
+            maven { url = 'https://artifactory.cern.ch/development' }
+            maven { url = 'https://artifactory.cern.ch/gradle-plugins' }
         } else {
             gradlePluginPortal()
         }
     }
 
     dependencies {
-        classpath 'com.github.jk1:gradle-license-report:1.5'
-        classpath 'io.github.gradle-nexus:publish-plugin:1.0.0'
+        classpath 'com.github.jk1:gradle-license-report:3.1.5'
+        classpath 'io.github.gradle-nexus:publish-plugin:2.0.0'
     }
 }
 
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'jacoco'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 
 group = project['POM.groupId']
 
-sourceCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+    // source code compatibility / bytecode level
+    options.release = 17
+    options.encoding = 'UTF-8'
+}
 
 repositories {
     if (project['CERN_VM']) {
-        maven { url 'http://artifactory.cern.ch/ds-jcenter' }
-        maven { url 'http://artifactory.cern.ch/development' }
+        maven { url = 'https://artifactory.cern.ch/development' }
     } else {
         mavenCentral()
     }
 }
 
 dependencies {
-    compile group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
-        
-    compile group: 'org.springframework', name: 'spring-core', version: springVersion
-    compile group: 'org.springframework', name: 'spring-context', version: springVersion
-    
-    compile group: 'com.google.guava', name: 'guava', version: guavaVersion
+    api "org.slf4j:slf4j-api:${slf4jVersion}"
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.9.1'
-    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.0'
+    api platform("org.springframework:spring-framework-bom:${springVersion}")
+    api 'org.springframework:spring-core'
+    api 'org.springframework:spring-context'
+
+    api "com.google.guava:guava:${guavaVersion}"
+
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
 }
 
 wrapper {
-    gradleVersion = '5.4.1'
+    gradleVersion = '9.6.1'
     distributionType = Wrapper.DistributionType.ALL
 }
 
@@ -78,37 +89,36 @@ sourceSets {
 }
 
 test {
+    useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
-        exceptionFormat "full"
+        exceptionFormat = "full"
     }
-}
-
-jacoco {
-    toolVersion = "0.8.3"
 }
 
 jacocoTestReport {
     reports {
-        xml.enabled true
-        xml.destination file("$buildDir/reports/jacoco/report.xml")
-        html.enabled true
-        csv.enabled false
+        xml.required = true
+        xml.outputLocation = layout.buildDirectory.file('reports/jacoco/report.xml')
+        html.required = true
+        csv.required = false
     }
 }
 
 javadoc { options.encoding = "UTF-8" }
 
 if (!project.tasks.findByName("javadocJar")) {
-    task javadocJar(type: Jar) {
-        classifier = 'javadoc'
+    tasks.register('javadocJar', Jar) {
+        archiveClassifier = 'javadoc'
         from javadoc
     }
 }
 
 if (!project.tasks.findByName("sourcesJar")) {
-    task sourcesJar(type: Jar) {
-        classifier = 'sources'
+    tasks.register('sourcesJar', Jar) {
+        archiveClassifier = 'sources'
+        // src/main/java is both a java and a resources srcDir
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         from sourceSets.main.allSource
     }
 }
@@ -132,8 +142,8 @@ if (!project['CERN_VM']) {
     apply plugin: 'com.github.jk1.dependency-license-report'
 
     licenseReport {
-        renderers = [this.class.classLoader.loadClass('com.github.jk1.license.render.InventoryHtmlReportRenderer').newInstance()]
-        filters = [this.class.classLoader.loadClass('com.github.jk1.license.filter.LicenseBundleNormalizer').newInstance()]
+        renderers = [new com.github.jk1.license.render.InventoryHtmlReportRenderer()]
+        filters = [new com.github.jk1.license.filter.LicenseBundleNormalizer()]
     }
 }
 
